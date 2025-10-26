@@ -11,14 +11,16 @@ def main():
     if len(sys.argv) != 2:
         sys.exit("Usage: python pagerank.py corpus")
     corpus = crawl(sys.argv[1])
-    ranks = sample_pagerank(corpus, DAMPING, SAMPLES)
-    print(f"PageRank Results from Sampling (n = {SAMPLES})")
-    for page in sorted(ranks):
-        print(f"  {page}: {ranks[page]:.4f}")
-    ranks = iterate_pagerank(corpus, DAMPING)
-    print(f"PageRank Results from Iteration")
-    for page in sorted(ranks):
-        print(f"  {page}: {ranks[page]:.4f}")
+    print(corpus)
+    print(transition_model(corpus, "2.html", DAMPING))
+    # ranks = sample_pagerank(corpus, DAMPING, SAMPLES)
+    # print(f"PageRank Results from Sampling (n = {SAMPLES})")
+    # for page in sorted(ranks):
+    #     print(f"  {page}: {ranks[page]:.4f}")
+    # ranks = iterate_pagerank(corpus, DAMPING)
+    # print(f"PageRank Results from Iteration")
+    # for page in sorted(ranks):
+    #     print(f"  {page}: {ranks[page]:.4f}")
 
 
 def crawl(directory):
@@ -40,10 +42,7 @@ def crawl(directory):
 
     # Only include links to other pages in the corpus
     for filename in pages:
-        pages[filename] = set(
-            link for link in pages[filename]
-            if link in pages
-        )
+        pages[filename] = set(link for link in pages[filename] if link in pages)
 
     return pages
 
@@ -57,7 +56,22 @@ def transition_model(corpus, page, damping_factor):
     linked to by `page`. With probability `1 - damping_factor`, choose
     a link at random chosen from all pages in the corpus.
     """
-    raise NotImplementedError
+    N = len(corpus)
+    pages = corpus[page]
+    distribution = dict()
+
+    # If a page has no links in it, each page in the corpus is equally likely.
+    if len(pages) == 0:
+        return {p: 1 / N for p in corpus}
+
+    # Initially dstribute 1 - D equally to all
+    for corp in corpus:
+        distribution[corp] = (1 - damping_factor) / N
+
+    # Distribute the rest of the probability
+    for page in pages:
+        distribution[page] = distribution.get(page) + damping_factor / len(pages)
+    return distribution
 
 
 def sample_pagerank(corpus, damping_factor, n):
