@@ -83,18 +83,21 @@ def sample_pagerank(corpus, damping_factor, n):
     """
     samples = []
 
+    # Make a new sample depending upon the page (Previous sample)
     def sample(page):
         distribution = transition_model(corpus, page, damping_factor)
         return random.choices(
             list(distribution.keys()), weights=list(distribution.values())
         )[0]
 
+    # Choosing a sample based on the previous sample
     for i in range(n):
         if samples == []:
             samples.append(sample(random.choice(list(corpus.keys()))))
         else:
             samples.append(sample(samples[i - 1]))
 
+    # Count the samples using a dictonary
     pagerank = dict()
     for s in samples:
         if pagerank.get(s, None) is None:
@@ -102,6 +105,7 @@ def sample_pagerank(corpus, damping_factor, n):
         else:
             pagerank[s] += 1
 
+    # Normalize the count and return the distribution
     return {p: w / n for p, w in pagerank.items()}
 
 
@@ -114,7 +118,36 @@ def iterate_pagerank(corpus, damping_factor):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-    raise NotImplementedError
+    # Initial distribution of ranks of pages
+    pages = list(corpus.keys())
+    n = len(pages)
+    distribution = dict()
+    for page in pages:
+        distribution[page] = 1 / n
+    copy_distribution = distribution.copy()
+    while True:
+        for p in pages:
+            contribs = []
+            for u, links in corpus.items():
+                if p in links:
+                    if len(links) > 0:
+                        contribs.append(distribution[u] / len(links))
+                if len(links) == 0:
+                    contribs.append(distribution[u] / n)
+            val = (1 - damping_factor) / n + damping_factor * sum(contribs)
+            distribution[p] = val
+        total = sum(distribution.values())
+        for p in distribution:
+            distribution[p] /= total
+        diffs = [
+            abs(distribution[p] - copy_distribution[p])
+            for p in list(distribution.keys())
+        ]
+        if max(diffs) < 0.001:
+            break
+
+        copy_distribution = distribution.copy()
+    return distribution
 
 
 if __name__ == "__main__":
